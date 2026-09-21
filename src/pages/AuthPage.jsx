@@ -15,8 +15,7 @@ import {
   EyeOff
 } from 'lucide-react';
 
-const API_URL = 'http://10.150.90.218:5000/api';
-
+const API_URL = "https://homeos-project.onrender.com/api";
 const GOOGLE_CLIENT_ID ='67049280847-9rs10rbb97s3tctcr8io1c4n9tc1issi.apps.googleusercontent.com'
 
 export default function AuthPage() {

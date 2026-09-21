@@ -1,5 +1,4 @@
-const API_URL = "http://10.150.90.218:5000/api";
-// =========================
+const API_URL = "https://homeos-project.onrender.com/api";// =========================
 // AUTH TOKEN
 // =========================
 
