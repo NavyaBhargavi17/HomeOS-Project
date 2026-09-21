@@ -28,6 +28,7 @@ app.use(
       "http://localhost:5173",
       "http://127.0.0.1:5173",
       "http://10.150.90.218:5173",
+       "https://home-os-project.vercel.app"
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
