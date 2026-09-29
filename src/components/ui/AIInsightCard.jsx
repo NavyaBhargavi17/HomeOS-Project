@@ -17,7 +17,7 @@ export default function AIInsightCard({
     >
       {/* Ambient soft glow */}
       <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#F4D8CC]/40 rounded-full blur-3xl pointer-events-none" />
-      
+
       <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-xl bg-[#F4D8CC] border border-[#C96243]/25 text-[#C96243] flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
@@ -30,6 +30,7 @@ export default function AIInsightCard({
                 <span>{title}</span>
                 <span className="text-[#C96243]">✦</span>
               </h4>
+
               {badge && (
                 <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-[#F4D8CC] text-[#C96243] border border-[#C96243]/30">
                   {badge}
@@ -38,14 +39,16 @@ export default function AIInsightCard({
             </div>
 
             {description && (
-              <p className="text-xs text-[#716963] leading-relaxed max-w-2xl">
+              <p className="homeos-secondary-text text-xs leading-relaxed max-w-2xl">
                 {description}
               </p>
             )}
 
             {recommendation && (
-              <div className="flex items-center gap-2 text-[11px] text-[#716963] pt-0.5">
-                <span className="font-semibold text-[#241D1A]">Recommended:</span>
+              <div className="homeos-secondary-text flex items-center gap-2 text-[11px] pt-0.5">
+                <span className="font-semibold text-[#241D1A]">
+                  Recommended:
+                </span>
                 <span>{recommendation}</span>
               </div>
             )}

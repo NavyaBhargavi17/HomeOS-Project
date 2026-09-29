@@ -14,8 +14,8 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-
-const API_URL = "https://homeos-project.onrender.com/api";
+const API_URL = "http://localhost:5000/api";
+//const API_URL = "https://homeos-project.onrender.com/api";
 const GOOGLE_CLIENT_ID ='67049280847-9rs10rbb97s3tctcr8io1c4n9tc1issi.apps.googleusercontent.com'
 
 export default function AuthPage() {
@@ -28,7 +28,11 @@ export default function AuthPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [resetStep, setResetStep] = useState(0);
+const [resetEmail, setResetEmail] = useState('');
+const [resetCode, setResetCode] = useState('');
+const [newPassword, setNewPassword] = useState('');
+const [confirmNewPassword, setConfirmNewPassword] = useState('');
   // ==========================================
   // 2FA LOGIN STATE
   // ==========================================
@@ -284,7 +288,157 @@ export default function AuthPage() {
     setAuthError('');
     setIsLoading(false);
   };
+  // ==========================================
+// FORGOT PASSWORD
+// ==========================================
+const handleForgotPassword = async () => {
+  if (!resetEmail.trim()) {
+    setAuthError('Please enter your email address.');
+    return;
+  }
 
+  if (!/\S+@\S+\.\S+/.test(resetEmail.trim())) {
+    setAuthError('Please enter a valid email address.');
+    return;
+  }
+
+  setAuthError('');
+  setIsLoading(true);
+
+  try {
+    const response = await fetch(
+      `${API_URL}/auth/forgot-password`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: resetEmail.trim(),
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || 'Unable to send verification code'
+      );
+    }
+
+    setResetStep(2);
+
+    addToast({
+      title: 'Verification Code Sent',
+      message: 'Check your email for the 6-digit password reset code.',
+      type: 'success',
+    });
+  } catch (error) {
+    const message =
+      error.message || 'Unable to send verification code';
+
+    setAuthError(message);
+
+    addToast({
+      title: 'Password Reset Failed',
+      message,
+      type: 'error',
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+// ==========================================
+// RESET PASSWORD
+// ==========================================
+const handleResetPassword = async () => {
+  if (!resetCode.trim()) {
+    setAuthError('Please enter the verification code.');
+    return;
+  }
+
+  if (!/^\d{6}$/.test(resetCode.trim())) {
+    setAuthError('Verification code must be 6 digits.');
+    return;
+  }
+
+  if (!newPassword) {
+    setAuthError('Please enter a new password.');
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    setAuthError('Password must be at least 6 characters.');
+    return;
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    setAuthError('Passwords do not match.');
+    return;
+  }
+
+  setAuthError('');
+  setIsLoading(true);
+
+  try {
+    const response = await fetch(
+      `${API_URL}/auth/reset-password`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: resetEmail.trim(),
+          code: resetCode.trim(),
+          newPassword,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || 'Unable to reset password'
+      );
+    }
+
+    setResetStep(0);
+    setResetEmail('');
+    setResetCode('');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setAuthError('');
+
+    setFormData({
+      name: '',
+      email: resetEmail.trim(),
+      password: '',
+      confirmPassword: '',
+    });
+
+    addToast({
+      title: 'Password Reset Successful',
+      message: 'Your password has been changed. Please sign in.',
+      type: 'success',
+    });
+  } catch (error) {
+    const message =
+      error.message || 'Unable to reset password';
+
+    setAuthError(message);
+
+    addToast({
+      title: 'Password Reset Failed',
+      message,
+      type: 'error',
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
   // ==========================================
   // GOOGLE SIGN-IN
   // ==========================================
@@ -707,9 +861,369 @@ export default function AuthPage() {
 
             </div>
 
+                    ) : resetStep === 1 ? (
+
+            <div className="space-y-6">
+
+              <div className="text-center">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#FFF1EC] border border-[#E8DDD6] flex items-center justify-center">
+                  <Mail className="w-7 h-7 text-[#C96243]" />
+                </div>
+
+                <h3 className="text-2xl font-extrabold text-[#241D1A] font-display tracking-tight">
+                  Forgot Password?
+                </h3>
+
+                <p className="text-xs text-[#716963] mt-2 leading-relaxed">
+                  Enter your registered email and we'll send you a 6-digit verification code.
+                </p>
+              </div>
+
+              {authError && (
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-[#FBE6E6] border border-[#D95C5C]/30 text-[#D95C5C]">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold">
+                      Password Reset Failed
+                    </p>
+                    <p className="text-[11px] mt-0.5">
+                      {authError}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-[#241D1A] mb-1.5">
+                  Email Address
+                </label>
+
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-[#9A908A] absolute left-3 top-1/2 -translate-y-1/2" />
+
+                  <input
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => {
+                      setResetEmail(e.target.value);
+                      setAuthError('');
+                    }}
+                    placeholder="name@household.com"
+                    className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl bg-[#FBF7F3] border border-[#E8DDD6] focus:outline-none focus:ring-2 focus:ring-[#C96243]/20 focus:border-[#C96243] text-[#241D1A] placeholder:text-[#9A908A]"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                loading={isLoading}
+                onClick={handleForgotPassword}
+                className="w-full font-bold shadow-md"
+              >
+                Send Verification Code
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setResetStep(0);
+                  setAuthError('');
+                }}
+                disabled={isLoading}
+                className="w-full text-xs font-semibold text-[#716963] hover:text-[#C96243] transition-colors disabled:opacity-50"
+              >
+                Back to Sign In
+              </button>
+
+            </div>
+          ) : resetStep === 1 ? (
+
+            <div className="space-y-6">
+
+              <div className="text-center">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#FFF1EC] border border-[#E8DDD6] flex items-center justify-center">
+                  <Mail className="w-7 h-7 text-[#C96243]" />
+                </div>
+
+                <h3 className="text-2xl font-extrabold text-[#241D1A] font-display tracking-tight">
+                  Forgot Password?
+                </h3>
+
+                <p className="text-xs text-[#716963] mt-2 leading-relaxed">
+                  Enter your registered email and we'll send you a 6-digit verification code.
+                </p>
+              </div>
+
+              {authError && (
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-[#FBE6E6] border border-[#D95C5C]/30 text-[#D95C5C]">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold">
+                      Password Reset Failed
+                    </p>
+                    <p className="text-[11px] mt-0.5">
+                      {authError}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-[#241D1A] mb-1.5">
+                  Email Address
+                </label>
+
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-[#9A908A] absolute left-3 top-1/2 -translate-y-1/2" />
+
+                  <input
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => {
+                      setResetEmail(e.target.value);
+                      setAuthError('');
+                    }}
+                    placeholder="name@household.com"
+                    className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl bg-[#FBF7F3] border border-[#E8DDD6] focus:outline-none focus:ring-2 focus:ring-[#C96243]/20 focus:border-[#C96243] text-[#241D1A] placeholder:text-[#9A908A]"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                loading={isLoading}
+                onClick={handleForgotPassword}
+                className="w-full font-bold shadow-md"
+              >
+                Send Verification Code
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setResetStep(0);
+                  setAuthError('');
+                }}
+                disabled={isLoading}
+                className="w-full text-xs font-semibold text-[#716963] hover:text-[#C96243] transition-colors disabled:opacity-50"
+              >
+                Back to Sign In
+              </button>
+
+            </div>
+
+                   ) : resetStep === 1 ? (
+
+            <div className="space-y-6">
+
+              <div className="text-center">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#FFF1EC] border border-[#E8DDD6] flex items-center justify-center">
+                  <Mail className="w-7 h-7 text-[#C96243]" />
+                </div>
+
+                <h3 className="text-2xl font-extrabold text-[#241D1A] font-display tracking-tight">
+                  Forgot Password?
+                </h3>
+
+                <p className="text-xs text-[#716963] mt-2 leading-relaxed">
+                  Enter your registered email and we'll send you a 6-digit verification code.
+                </p>
+              </div>
+
+              {authError && (
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-[#FBE6E6] border border-[#D95C5C]/30 text-[#D95C5C]">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold">
+                      Password Reset Failed
+                    </p>
+                    <p className="text-[11px] mt-0.5">
+                      {authError}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-[#241D1A] mb-1.5">
+                  Email Address
+                </label>
+
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-[#9A908A] absolute left-3 top-1/2 -translate-y-1/2" />
+
+                  <input
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => {
+                      setResetEmail(e.target.value);
+                      setAuthError('');
+                    }}
+                    placeholder="name@household.com"
+                    className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl bg-[#FBF7F3] border border-[#E8DDD6] focus:outline-none focus:ring-2 focus:ring-[#C96243]/20 focus:border-[#C96243] text-[#241D1A] placeholder:text-[#9A908A]"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                loading={isLoading}
+                onClick={handleForgotPassword}
+                className="w-full font-bold shadow-md"
+              >
+                Send Verification Code
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setResetStep(0);
+                  setAuthError('');
+                }}
+                disabled={isLoading}
+                className="w-full text-xs font-semibold text-[#716963] hover:text-[#C96243] transition-colors disabled:opacity-50"
+              >
+                Back to Sign In
+              </button>
+
+                      </div>
+
+          ) : resetStep === 2 ? (
+
+            <div className="space-y-6">
+
+              <div className="text-center">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#FFF1EC] border border-[#E8DDD6] flex items-center justify-center">
+                  <Lock className="w-7 h-7 text-[#C96243]" />
+                </div>
+
+                <h3 className="text-2xl font-extrabold text-[#241D1A] font-display tracking-tight">
+                  Reset Password
+                </h3>
+
+                <p className="text-xs text-[#716963] mt-2 leading-relaxed">
+                  Enter the 6-digit code sent to your email and create a new password.
+                </p>
+              </div>
+
+              {authError && (
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-[#FBE6E6] border border-[#D95C5C]/30 text-[#D95C5C]">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+
+                  <div>
+                    <p className="text-xs font-bold">
+                      Password Reset Failed
+                    </p>
+
+                    <p className="text-[11px] mt-0.5">
+                      {authError}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* VERIFICATION CODE */}
+              <div>
+                <label className="block text-xs font-bold text-[#241D1A] mb-1.5">
+                  Verification Code
+                </label>
+
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={resetCode}
+                  onChange={(e) => {
+                    setResetCode(
+                      e.target.value.replace(/\D/g, '').slice(0, 6)
+                    );
+                    setAuthError('');
+                  }}
+                  placeholder="000000"
+                  className="w-full px-4 py-3 text-center text-lg tracking-[0.35em] font-bold rounded-xl bg-[#FBF7F3] border border-[#E8DDD6] focus:outline-none focus:ring-2 focus:ring-[#C96243]/20 focus:border-[#C96243] text-[#241D1A] placeholder:text-[#9A908A]"
+                />
+              </div>
+
+              {/* NEW PASSWORD */}
+              <div>
+                <label className="block text-xs font-bold text-[#241D1A] mb-1.5">
+                  New Password
+                </label>
+
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#9A908A] absolute left-3 top-1/2 -translate-y-1/2" />
+
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      setAuthError('');
+                    }}
+                    placeholder="••••••••"
+                    className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl bg-[#FBF7F3] border border-[#E8DDD6] focus:outline-none focus:ring-2 focus:ring-[#C96243]/20 focus:border-[#C96243] text-[#241D1A] placeholder:text-[#9A908A]"
+                  />
+                </div>
+              </div>
+
+              {/* CONFIRM NEW PASSWORD */}
+              <div>
+                <label className="block text-xs font-bold text-[#241D1A] mb-1.5">
+                  Confirm New Password
+                </label>
+
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#9A908A] absolute left-3 top-1/2 -translate-y-1/2" />
+
+                  <input
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={(e) => {
+                      setConfirmNewPassword(e.target.value);
+                      setAuthError('');
+                    }}
+                    placeholder="••••••••"
+                    className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl bg-[#FBF7F3] border border-[#E8DDD6] focus:outline-none focus:ring-2 focus:ring-[#C96243]/20 focus:border-[#C96243] text-[#241D1A] placeholder:text-[#9A908A]"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                loading={isLoading}
+                onClick={handleResetPassword}
+                className="w-full font-bold shadow-md"
+              >
+                Reset Password
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setResetStep(1);
+                  setAuthError('');
+                }}
+                disabled={isLoading}
+                className="w-full text-xs font-semibold text-[#716963] hover:text-[#C96243] transition-colors disabled:opacity-50"
+              >
+                Back
+              </button>
+
+            </div>
+
           ) : (
 
             <>
+          
               {/* ==========================================
                   HEADER
                   ========================================== */}
@@ -887,20 +1401,17 @@ export default function AuthPage() {
                     </label>
 
                     {mode === 'login' && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          addToast({
-                            title: 'Password Reset',
-                            message:
-                              'Recovery link dispatched to registered email',
-                            type: 'info'
-                          })
-                        }
-                        className="text-[11px] text-[#C96243] hover:text-[#AE4F35] font-semibold transition-colors"
-                      >
-                        Forgot password?
-                      </button>
+                     <button
+  type="button"
+  onClick={() => {
+    setResetStep(1);
+    setResetEmail(formData.email);
+    setAuthError('');
+  }}
+  className="text-[11px] text-[#C96243] hover:text-[#AE4F35] font-semibold transition-colors"
+>
+  Forgot password?
+</button>
                     )}
 
                   </div>

@@ -3,7 +3,14 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const crypto = require("crypto");
-
+const nodemailer = require("nodemailer");
+const emailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 const User = require("../models/User");
 
 const router = express.Router();
@@ -814,7 +821,160 @@ router.post("/2fa/disable", async (req, res) => {
     });
   }
 });
+// ==================== FORGOT PASSWORD ====================
 
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Email is required",
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: normalizedEmail });
+
+    // Always return the same response so we don't reveal
+    // whether an email is registered.
+    if (!user) {
+      return res.json({
+        message: "If an account exists with this email, a verification code has been sent.",
+      });
+    }
+
+    // Generate a 6-digit verification code
+    const resetCode = crypto
+      .randomInt(100000, 1000000)
+      .toString();
+
+    // Hash the code before storing it
+    const hashedCode = await bcrypt.hash(resetCode, 10);
+
+    user.resetPasswordCode = hashedCode;
+    user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    await user.save();
+
+    await emailTransporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: user.email,
+      subject: "HomeOS Password Reset Code",
+      text: `Your HomeOS password reset code is ${resetCode}. This code will expire in 10 minutes.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto;">
+          <h2>HomeOS Password Reset</h2>
+          <p>We received a request to reset your HomeOS password.</p>
+
+          <p>Your verification code is:</p>
+
+          <div style="
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            padding: 15px;
+            text-align: center;
+            background: #f3f4f6;
+            border-radius: 10px;
+          ">
+            ${resetCode}
+          </div>
+
+          <p>This code will expire in <strong>10 minutes</strong>.</p>
+
+          <p>If you did not request a password reset, you can safely ignore this email.</p>
+
+          <p>— HomeOS Team</p>
+        </div>
+      `,
+    });
+
+    return res.json({
+      message: "If an account exists with this email, a verification code has been sent.",
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+
+    return res.status(500).json({
+      message: "Unable to process password reset request.",
+    });
+  }
+});
+// ==================== RESET PASSWORD ====================
+
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({
+        message: "Email, verification code, and new password are required.",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters long.",
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({
+      email: normalizedEmail,
+    }).select("+resetPasswordCode +resetPasswordExpires");
+
+    if (!user || !user.resetPasswordCode || !user.resetPasswordExpires) {
+      return res.status(400).json({
+        message: "Invalid or expired verification code.",
+      });
+    }
+
+    // Check whether the code has expired
+    if (user.resetPasswordExpires < new Date()) {
+      user.resetPasswordCode = null;
+      user.resetPasswordExpires = null;
+      await user.save();
+
+      return res.status(400).json({
+        message: "Verification code has expired. Please request a new code.",
+      });
+    }
+
+    // Compare entered code with stored hashed code
+    const isCodeValid = await bcrypt.compare(
+      code.toString(),
+      user.resetPasswordCode
+    );
+
+    if (!isCodeValid) {
+      return res.status(400).json({
+        message: "Invalid verification code.",
+      });
+    }
+
+    // Hash the new password
+    user.password = await bcrypt.hash(newPassword, 10);
+
+    // Invalidate the reset code after successful password reset
+    user.resetPasswordCode = null;
+    user.resetPasswordExpires = null;
+
+    await user.save();
+
+    return res.json({
+      message: "Password reset successfully. You can now log in with your new password.",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+
+    return res.status(500).json({
+      message: "Unable to reset password.",
+    });
+  }
+});
 
 // ==========================================
 // EXPORT ROUTER

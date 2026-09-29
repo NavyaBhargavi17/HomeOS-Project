@@ -21,7 +21,18 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
+         resetPasswordCode: {
+      type: String,
+      default: null,
+      select: false,
+    },
 
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+    
     phone: {
       type: String,
       default: "",

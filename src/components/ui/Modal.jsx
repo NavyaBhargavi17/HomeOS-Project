@@ -16,10 +16,12 @@ export default function Modal({
         onClose();
       }
     };
+
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleKeyDown);
     }
+
     return () => {
       document.body.style.overflow = 'unset';
       window.removeEventListener('keydown', handleKeyDown);
@@ -38,13 +40,23 @@ export default function Modal({
       />
 
       {/* Modal Card */}
-      <div className={`relative bg-white rounded-2xl border border-[#E8DDD6] shadow-homeos-lg w-full ${maxWidth} z-10 overflow-hidden transform transition-all my-8 text-[#241D1A]`}>
+      <div
+        className={`relative bg-white rounded-2xl border border-[#E8DDD6] shadow-homeos-lg w-full ${maxWidth} z-10 overflow-hidden transform transition-all my-8 text-[#241D1A]`}
+      >
         {/* Header */}
         <div className="px-6 py-5 bg-[#FFF9F6] border-b border-[#E8DDD6] flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold text-[#241D1A] font-display tracking-tight">{title}</h3>
-            {subtitle && <p className="text-xs text-[#716963] mt-0.5">{subtitle}</p>}
+            <h3 className="text-lg font-bold text-[#241D1A] font-display tracking-tight">
+              {title}
+            </h3>
+
+            {subtitle && (
+              <p className="homeos-secondary-text text-xs mt-0.5">
+                {subtitle}
+              </p>
+            )}
           </div>
+
           {showClose && (
             <button
               onClick={onClose}
@@ -57,7 +69,7 @@ export default function Modal({
         </div>
 
         {/* Content */}
-        <div className="p-6 max-h-[80vh] overflow-y-auto text-sm text-[#716963]">
+        <div className="p-6 max-h-[80vh] overflow-y-auto text-sm homeos-secondary-text">
           {children}
         </div>
       </div>

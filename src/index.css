@@ -10,6 +10,7 @@
    ========================================================= */
 
 :root {
+
   /* Backgrounds */
   --homeos-bg: #FBF7F3;
   --homeos-surface: #FFFFFF;
@@ -86,6 +87,12 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Global secondary/supporting text */
+  p {
+    color: var(--homeos-text-secondary);
+    font-weight: 400;
+  }
+
   ::selection {
     background: var(--homeos-primary-soft);
     color: var(--homeos-text);
@@ -113,6 +120,7 @@
     'Playfair Display',
     Georgia,
     serif;
+
   letter-spacing: -0.035em;
 }
 
@@ -121,6 +129,7 @@
     'DM Sans',
     Inter,
     sans-serif;
+
   letter-spacing: -0.025em;
 }
 
@@ -130,7 +139,39 @@
     Inter,
     sans-serif;
 }
+/* =========================================================
+   GLOBAL TEXT HIERARCHY
+   ========================================================= */
 
+.homeos-primary-text {
+  color: var(--homeos-text);
+  font-weight: 400;
+}
+
+.homeos-secondary-text {
+  color: var(--homeos-text-secondary);
+  font-weight: 400;
+}
+
+.homeos-muted-text {
+  color: var(--homeos-text-muted);
+  font-weight: 400;
+}
+
+.homeos-label {
+  color: var(--homeos-text-secondary);
+  font-weight: 600;
+}
+
+.homeos-value {
+  color: var(--homeos-text);
+  font-weight: 600;
+}
+
+.homeos-heading-text {
+  color: var(--homeos-text);
+  font-weight: 600;
+}
 /* =========================================================
    SCROLLBAR
    ========================================================= */
@@ -138,7 +179,9 @@
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
+  
 }
+
 
 ::-webkit-scrollbar-track {
   background: var(--homeos-bg);
@@ -172,6 +215,7 @@
   border: 1px solid var(--homeos-border);
   box-shadow: var(--homeos-shadow);
   border-radius: var(--homeos-radius);
+
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -193,10 +237,12 @@
   color: #FFFFFF;
   border-radius: 10px;
   font-weight: 600;
+
   transition:
     background 0.2s ease,
     transform 0.2s ease,
     box-shadow 0.2s ease;
+
   box-shadow: 0 6px 18px rgba(201, 98, 67, 0.18);
 }
 
@@ -212,6 +258,7 @@
   border: 1px solid #D9A898;
   border-radius: 10px;
   font-weight: 600;
+
   transition: all 0.2s ease;
 }
 
@@ -271,6 +318,7 @@
    ========================================================= */
 
 @keyframes pulseSlow {
+
   0%,
   100% {
     opacity: 1;
@@ -288,6 +336,7 @@
 }
 
 @keyframes warmGlow {
+
   0%,
   100% {
     box-shadow: 0 0 15px rgba(201, 98, 67, 0.10);
@@ -313,4 +362,37 @@
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+/* =========================================================
+   HOMEOS — TYPOGRAPHY SYSTEM
+   ========================================================= */
+
+.homeos-primary-text {
+  color: var(--homeos-text);
+  font-weight: 400;
+}
+
+.homeos-secondary-text {
+  color: var(--homeos-text-secondary);
+  font-weight: 400;
+}
+
+.homeos-muted-text {
+  color: var(--homeos-text-muted);
+  font-weight: 400;
+}
+
+.homeos-label {
+  color: var(--homeos-text-secondary);
+  font-weight: 600;
+}
+
+.homeos-value {
+  color: var(--homeos-text);
+  font-weight: 600;
+}
+
+.homeos-heading-text {
+  color: var(--homeos-text);
+  font-weight: 600;
 }
