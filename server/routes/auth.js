@@ -3,14 +3,17 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
+/*const nodemailer = require("nodemailer");
 const emailTransporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-});
+});*/
+const { Resend } = require("resend");
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 const User = require("../models/User");
 
 const router = express.Router();
@@ -858,38 +861,42 @@ router.post("/forgot-password", async (req, res) => {
 
     await user.save();
 
-    await emailTransporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: user.email,
-      subject: "HomeOS Password Reset Code",
-      text: `Your HomeOS password reset code is ${resetCode}. This code will expire in 10 minutes.`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto;">
-          <h2>HomeOS Password Reset</h2>
-          <p>We received a request to reset your HomeOS password.</p>
+const { data, error } = await resend.emails.send({
+  from: "HomeOS <onboarding@resend.dev>",
+  to: [user.email],
+  subject: "HomeOS Password Reset Code",
+  text: `Your HomeOS password reset code is ${resetCode}. This code will expire in 10 minutes.`,
+  html: `
+    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto;">
+      <h2>HomeOS Password Reset</h2>
+      <p>We received a request to reset your HomeOS password.</p>
 
-          <p>Your verification code is:</p>
+      <p>Your verification code is:</p>
 
-          <div style="
-            font-size: 32px;
-            font-weight: bold;
-            letter-spacing: 8px;
-            padding: 15px;
-            text-align: center;
-            background: #f3f4f6;
-            border-radius: 10px;
-          ">
-            ${resetCode}
-          </div>
+      <div style="
+        font-size: 32px;
+        font-weight: bold;
+        letter-spacing: 8px;
+        padding: 15px;
+        text-align: center;
+        background: #f3f4f6;
+        border-radius: 10px;
+      ">
+        ${resetCode}
+      </div>
 
-          <p>This code will expire in <strong>10 minutes</strong>.</p>
+      <p>This code will expire in <strong>10 minutes</strong>.</p>
 
-          <p>If you did not request a password reset, you can safely ignore this email.</p>
+      <p>If you did not request a password reset, you can safely ignore this email.</p>
 
-          <p>— HomeOS Team</p>
-        </div>
-      `,
-    });
+      <p>— HomeOS Team</p>
+    </div>
+  `,
+});
+
+if (error) {
+  throw new Error(error.message || "Failed to send reset email");
+}
 
     return res.json({
       message: "If an account exists with this email, a verification code has been sent.",
