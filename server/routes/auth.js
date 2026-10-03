@@ -11,9 +11,7 @@ const emailTransporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });*/
-const { Resend } = require("resend");
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 const User = require("../models/User");
 
 const router = express.Router();
@@ -844,7 +842,8 @@ router.post("/forgot-password", async (req, res) => {
     // whether an email is registered.
     if (!user) {
       return res.json({
-        message: "If an account exists with this email, a verification code has been sent.",
+        message:
+          "If an account exists with this email, a verification code has been sent.",
       });
     }
 
@@ -861,42 +860,66 @@ router.post("/forgot-password", async (req, res) => {
 
     await user.save();
 
-const { data, error } = await resend.emails.send({
-  from: "HomeOS <onboarding@resend.dev>",
-  to: [user.email],
-  subject: "HomeOS Password Reset Code",
-  text: `Your HomeOS password reset code is ${resetCode}. This code will expire in 10 minutes.`,
-  html: `
-    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto;">
-      <h2>HomeOS Password Reset</h2>
-      <p>We received a request to reset your HomeOS password.</p>
+    // Send reset email using Brevo API
+    const response = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "api-key": process.env.BREVO_API_KEY,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: {
+          name: "HomeOS",
+          email: process.env.BREVO_SENDER_EMAIL,
+        },
+        to: [
+          {
+            email: user.email,
+          },
+        ],
+        subject: "HomeOS Password Reset Code",
+        textContent: `Your HomeOS password reset code is ${resetCode}. This code will expire in 10 minutes.`,
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto;">
+            <h2>HomeOS Password Reset</h2>
 
-      <p>Your verification code is:</p>
+            <p>We received a request to reset your HomeOS password.</p>
 
-      <div style="
-        font-size: 32px;
-        font-weight: bold;
-        letter-spacing: 8px;
-        padding: 15px;
-        text-align: center;
-        background: #f3f4f6;
-        border-radius: 10px;
-      ">
-        ${resetCode}
-      </div>
+            <p>Your verification code is:</p>
 
-      <p>This code will expire in <strong>10 minutes</strong>.</p>
+            <div style="
+              font-size: 32px;
+              font-weight: bold;
+              letter-spacing: 8px;
+              padding: 15px;
+              text-align: center;
+              background: #f3f4f6;
+              border-radius: 10px;
+            ">
+              ${resetCode}
+            </div>
 
-      <p>If you did not request a password reset, you can safely ignore this email.</p>
+            <p>
+              This code will expire in
+              <strong>10 minutes</strong>.
+            </p>
 
-      <p>— HomeOS Team</p>
-    </div>
-  `,
-});
+            <p>
+              If you did not request a password reset,
+              you can safely ignore this email.
+            </p>
 
-if (error) {
-  throw new Error(error.message || "Failed to send reset email");
-}
+            <p>— HomeOS Team</p>
+          </div>
+        `,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(errorData || "Failed to send reset email");
+    }
 
     return res.json({
       message: "If an account exists with this email, a verification code has been sent.",
@@ -909,6 +932,7 @@ if (error) {
     });
   }
 });
+
 // ==================== RESET PASSWORD ====================
 
 router.post("/reset-password", async (req, res) => {
@@ -926,6 +950,7 @@ router.post("/reset-password", async (req, res) => {
         message: "Password must be at least 6 characters long.",
       });
     }
+    
 
     const normalizedEmail = email.toLowerCase().trim();
 
